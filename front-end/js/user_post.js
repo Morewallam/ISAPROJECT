@@ -7,8 +7,7 @@ const root = "https://seanwallace.ca/v1/";
 const params = new URLSearchParams(window.location.search);
 function loadCurrentPost() {
     var payload = JSON.parse(window.atob(token.split('.')[1])); 
-    console.log(payload["user"]["username"]);
-    console.log(payload["user"]);
+
     document.getElementById("userName").innerText = "Logged in as " + payload["user"]["username"];
 
     const xhttp = new XMLHttpRequest();
@@ -20,8 +19,7 @@ function loadCurrentPost() {
     xhttp.send(null);
 
     let currentPostUrl = window.location.href;
-    console.log(currentPostUrl);
-    console.log(params.get("id"));
+
     let currentPostId = parseInt(params.get("id"));
     xhttp.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
@@ -35,6 +33,15 @@ function loadCurrentPost() {
                 document.getElementById("postAuthor").innerText = entryCollection[i]["user"]["username"];
                 document.getElementById("postTitle").innerText = entryCollection[i]["title"];
                 document.getElementById("postContent").innerText = entryCollection[i]["content"];
+                console.log(payload["user"]["user_id"]);
+                console.log(entryCollection[i]["user"]["userID"]);
+                if (payload["user"]["user_id"] !== entryCollection[i]["user"]["userID"]) {
+                    document.getElementById("postEdit").style.visibility = "hidden";
+                    document.getElementById("postDelete").style.visibility = "hidden";
+                    } else {
+                        document.getElementById("postEdit").style.visibility = "visible";
+                        document.getElementById("postDelete").style.visibility = "visible";
+                    }
                 }
             }
         }
@@ -91,6 +98,10 @@ function editPost() {
 document.getElementById("postEdit").onclick = editPost;
 
 function sumbitNewComment() {
+    console.log("trying for new comment");
+
+    var payload = JSON.parse(window.atob(token.split('.')[1])); 
+
     const xhttp = new XMLHttpRequest();
     let submitCommenturl = root + "comments";
     
@@ -116,8 +127,9 @@ function sumbitNewComment() {
             console.log(this.responseText);
         }
     };
+    window.alert("Comment added");
 }
-
+document.getElementById("userSubmitNewCommentEntry").onclick = sumbitNewComment;
 
 function deleteComment() {
     let currentCommentId = this.parentNode.id;
@@ -141,18 +153,20 @@ function deleteComment() {
             }
         };
     }
+    window.alert("Comment delete");
 }
 function editComment() {
-    let currentCommentId = this.parentNode.id;
+    let currentCommentId = parseInt(this.parentNode.id);
     const xhttp = new XMLHttpRequest();
 
     console.log(currentCommentId); 
     let editCommentUrl = root + "comments";
-    console.log(editUrl);
+    console.log(editCommentUrl);
     let userDecision = window.confirm("Are you sure you would like edit the comment?");
     if(userDecision) {
         console.log("going to edit");
         let newCommentContent = window.prompt("Please enter the new content");
+        console.log(newCommentContent);
         xhttp.open("PUT",editCommentUrl);
         xhttp.setRequestHeader("Authorization", "Bearer " +token);
         xhttp.setRequestHeader("Access-Control-Allow-Origin", "*");
@@ -165,13 +179,16 @@ function editComment() {
             }
         };
     }
+    window.alert("Comment edited");
 }
 
 function loadComment() {
 
     const xhttp = new XMLHttpRequest();
     console.log(token);
-
+    var payload = JSON.parse(window.atob(token.split('.')[1])); 
+    console.log(payload["user"]["username"]);
+    console.log(payload["user"]);
     let currentPostUrl = window.location.href;
     console.log(currentPostUrl);
     console.log(params.get("id"));
@@ -191,29 +208,56 @@ function loadComment() {
         for (let i = 0; i < commentCollection.length; i++) {
             let comment = document.createElement("div");
             comment.className = "mt-3 border border-dark border-bottom bg-light"
-            comment.id = entryCollection[i]["id"];
-            entry.onclick=()=>{
-                window.location.href = "./user_post.html?id="+entry.id;
-            }
+            comment.id = commentCollection[i]["id"];
+            // entry.onclick=()=>{
+            //     window.location.href = "./user_post.html?id="+entry.id;
+            // }
+            let currentUserID = payload["user"]["user_id"];
+            let commentUserID = commentCollection[i]["user"]["userID"];
+            
             let commentContent = document.createElement("div");
             let commentUser = document.createElement("div");
 
-            console.log(entryCollection[i]["user"]);
             commentUser.innerText = commentCollection[i]["user"]["username"];
             commentContent.innerText = commentCollection[i]["content"];
 
-            comment.appendChild(entryUser);
-            comment.appendChild(entryContent);
+            comment.appendChild(commentUser);
+            comment.appendChild(commentContent);
+
+            console.log(currentUserID);
+            console.log(commentUserID);
+
+            if (currentUserID === commentUserID) {
+                let buttonContainer = document.createElement("div");
+                buttonContainer.className = "col self-align-end";
+                buttonContainer.id = commentCollection[i]["id"];
+
+                let editButton = document.createElement("button");
+                let deleteButton = document.createElement("button");
+
+                editButton.onclick = editComment;
+                deleteButton.onclick = deleteComment;
+
+                editButton.innerText = "Edit comment";
+                deleteButton.innerText = "Delete comment";
+
+                buttonContainer.appendChild(editButton);
+                buttonContainer.appendChild(deleteButton);
+
+                comment.appendChild(buttonContainer);
+            }
     
             commentContainer.appendChild(comment);
+            document.getElementById("commentPastEntry").appendChild(commentContainer);
             }
         }
-        document.getElementById("commentPastEntry").appendChild(commentContainer);
+        
     };
 }
 
 function load() {
     loadCurrentPost();
+    loadComment();
 }
 // document.getElementById("submit").onclick = sumbitNewComment;
 document.getElementById("postDelete").onclick = deletePost;
